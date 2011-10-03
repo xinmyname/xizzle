@@ -28,5 +28,11 @@ namespace xizzle
                     return (XmlElement)it;
             return null;
         }
+
+        public static IEnumerable<XmlElement> Select(this XmlDocument doc, string selector)
+        {
+            var context = XmlDocumentContext.Open(doc);
+            return context.Select(selector);
+        }
     }
 }

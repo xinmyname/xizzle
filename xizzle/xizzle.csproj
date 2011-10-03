@@ -45,6 +45,7 @@
     <Compile Include="RegexExtensions.cs" />
     <Compile Include="SetExtensions.cs" />
     <Compile Include="Xizzle.cs" />
+    <Compile Include="XmlDocumentContext.cs" />
     <Compile Include="XmlExtensions.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

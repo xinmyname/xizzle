@@ -9,15 +9,13 @@ namespace xizzle.tests
 {
     public class XizzleContext
     {
-        public Xizzle Query(string xml)
+        public XmlDocument Query(string xml)
         {
-            Xizzle query;
+            var doc = new XmlDocument();
 
-            using (var stream = new MemoryStream(Encoding.Default.GetBytes(xml)))
-                using (var xmlReader = new XmlTextReader(stream))
-                    query = new Xizzle(xmlReader);
+            doc.LoadXml(xml);
 
-            return query;
+            return doc;
         }
     }
 
