@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +7,11 @@ using System.Xml;
 
 namespace xizzle
 {
-    public class XmlDocumentContext
+    public class XmlDocumentContext : IDisposable
     {
         private static readonly FlexDict _patterns;
         private static readonly Regex _re;
-        private static readonly ConcurrentDictionary<XmlDocument, XmlDocumentContext> _contexts;
+        private static readonly Dictionary<XmlDocument, XmlDocumentContext> _contexts;
 
         private readonly Dictionary<string, XmlElement> _idDict;
         private readonly Dictionary<string, HashSet<XmlElement>> _typeDict;
@@ -49,15 +48,28 @@ namespace xizzle
 
             _re = new Regex(_patterns["GOS"], RegexOptions.ExplicitCapture | RegexOptions.Singleline);
 
-            _contexts = new ConcurrentDictionary<XmlDocument, XmlDocumentContext>();
+            _contexts = new Dictionary<XmlDocument, XmlDocumentContext>();
         }
 
-        public static XmlDocumentContext Open(XmlDocument doc)
+        public static XmlDocumentContext Get(XmlDocument doc)
         {
-            return _contexts.GetOrAdd(doc, d => new XmlDocumentContext(d));
+            XmlDocumentContext context;
+
+            lock (doc)
+            {
+                if (_contexts.ContainsKey(doc))
+                    context = _contexts[doc];
+                else
+                {
+                    context = new XmlDocumentContext(doc);
+                    _contexts.Add(doc, context);
+                }
+            }
+
+            return context;
         }
 
-        public XmlDocumentContext(XmlDocument doc)
+        private XmlDocumentContext(XmlDocument doc)
         {
             _xmlDoc = doc;
 
@@ -256,6 +268,13 @@ namespace xizzle
                     yield return e;
             }
         }
-         
+
+        public void Dispose()
+        {
+            lock (_xmlDoc)
+            {
+                _contexts.Remove(_xmlDoc);
+            }
+        }
     }
 }

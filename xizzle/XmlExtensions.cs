@@ -31,8 +31,14 @@ namespace xizzle
 
         public static IEnumerable<XmlElement> Select(this XmlDocument doc, string selector)
         {
-            var context = XmlDocumentContext.Open(doc);
+            var context = XmlDocumentContext.Get(doc);
             return context.Select(selector);
+        }
+
+        public static XmlDocumentContext Open(this XmlDocument doc, string xml)
+        {
+            doc.LoadXml(xml);
+            return XmlDocumentContext.Get(doc);
         }
     }
 }
