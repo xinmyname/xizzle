@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
+using System.Xml.Linq;
 
 namespace xizzle
 {
-    public class XmlDocumentContext : IDisposable
+    public class XElementContext : IDisposable
     {
         private static readonly FlexDict _patterns;
         private static readonly Regex _re;
-        private static readonly Dictionary<XmlDocument, XmlDocumentContext> _contexts;
+        private static readonly Dictionary<XElement, XElementContext> _contexts;
 
-        private readonly Dictionary<string, XmlElement> _idDict;
-        private readonly Dictionary<string, HashSet<XmlElement>> _typeDict;
-        private readonly Dictionary<string, HashSet<XmlElement>> _attrDict;
-        private readonly XmlDocument _xmlDoc;
+        private readonly Dictionary<string, XElement> _idDict;
+        private readonly Dictionary<string, HashSet<XElement>> _typeDict;
+        private readonly Dictionary<string, HashSet<XElement>> _attrDict;
+        private readonly XElement _root;
 
-        static XmlDocumentContext()
+        static XElementContext()
         {
             _patterns = new FlexDict
                 {
@@ -48,79 +48,79 @@ namespace xizzle
 
             _re = new Regex(_patterns["GOS"], RegexOptions.ExplicitCapture | RegexOptions.Singleline);
 
-            _contexts = new Dictionary<XmlDocument, XmlDocumentContext>();
+            _contexts = new Dictionary<XElement, XElementContext>();
         }
 
-        public static XmlDocumentContext Get(XmlDocument doc)
+        public static XElementContext Get(XElement root)
         {
-            XmlDocumentContext context;
+            XElementContext context;
 
-            lock (doc)
+            lock (root)
             {
-                if (_contexts.ContainsKey(doc))
-                    context = _contexts[doc];
+                if (_contexts.ContainsKey(root))
+                    context = _contexts[root];
                 else
                 {
-                    context = new XmlDocumentContext(doc);
-                    _contexts.Add(doc, context);
+                    context = new XElementContext(root);
+                    _contexts.Add(root, context);
                 }
             }
 
             return context;
         }
 
-        public XmlDocumentContext(XmlDocument doc)
+        public XElementContext(XElement root)
         {
-            _xmlDoc = doc;
+            _root = root;
 
-            _idDict = new Dictionary<string, XmlElement>();
-            _typeDict = new Dictionary<string, HashSet<XmlElement>>();
-            _attrDict = new Dictionary<string, HashSet<XmlElement>>();
+            _idDict = new Dictionary<string, XElement>();
+            _typeDict = new Dictionary<string, HashSet<XElement>>();
+            _attrDict = new Dictionary<string, HashSet<XElement>>();
 
-            foreach (var el in _xmlDoc.DocumentElement.AllElements())
+            foreach (var el in _root.DescendantsAndSelf())
             {
-                if (el.GetAttribute("name").Length > 0)
-                    _idDict[el.GetAttribute("name")] = el;
+                IEnumerable<XAttribute> nameAttributes = el.Attributes()
+                    .Where(a => String.Compare(a.Name.LocalName, "name", true) == 0);
+                
+                foreach (XAttribute attr in nameAttributes)
+                    _idDict[attr.Value] = el;
 
-                if (el.GetAttribute("Name").Length > 0)
-                    _idDict[el.GetAttribute("Name")] = el;
+                if (!_typeDict.ContainsKey(el.Name.LocalName))
+                    _typeDict[el.Name.LocalName] = new HashSet<XElement>();
+                _typeDict[el.Name.LocalName].Add(el);
 
-                if (!_typeDict.ContainsKey(el.LocalName))
-                    _typeDict[el.LocalName] = new HashSet<XmlElement>();
-                _typeDict[el.LocalName].Add(el);
-
-                foreach (XmlAttribute a in el.Attributes)
+                foreach (XAttribute a in el.Attributes())
                 {
-                    if (!_attrDict.ContainsKey(a.LocalName))
-                        _attrDict[a.LocalName] = new HashSet<XmlElement>();
-                    _attrDict[a.LocalName].Add(el);
+                    if (!_attrDict.ContainsKey(a.Name.LocalName))
+                        _attrDict[a.Name.LocalName] = new HashSet<XElement>();
+                    _attrDict[a.Name.LocalName].Add(el);
                 }
             }
         }
 
-        private void Filter_ID(ref HashSet<XmlElement> set, string id)
+        private void Filter_ID(ref HashSet<XElement> set, string id)
         {
             if (_idDict.ContainsKey(id))
             {
-                XmlElement el = _idDict[id];
+                XElement el = _idDict[id];
                 if (set == null)
-                    set = new HashSet<XmlElement> { _idDict[id] };
+                    set = new HashSet<XElement> { _idDict[id] };
                 else
                     set.Filter(e => e == el);
             }
-            else set = new HashSet<XmlElement>();
+            else set = new HashSet<XElement>();
         }
 
-        private void Filter_Type(ref HashSet<XmlElement> set, string type)
+        private void Filter_Type(ref HashSet<XElement> set, string type)
         {
             if (_typeDict.ContainsKey(type))
             {
                 if (set == null)
-                    set = new HashSet<XmlElement>(_typeDict[type]);
+                    set = new HashSet<XElement>(_typeDict[type]);
                 else
                     set.IntersectWith(_typeDict[type]);
             }
-            else set = new HashSet<XmlElement>();
+            else set = new HashSet<XElement>();
         }
 
         private static string Slice(string str, int? start = null, int? end = null, int step = 1)
@@ -144,12 +144,12 @@ namespace xizzle
             return sb.ToString();
         }
 
-        private void Filter_Attribute(ref HashSet<XmlElement> set, string name, string @operator, string value)
+        private void Filter_Attribute(ref HashSet<XElement> set, string name, string @operator, string value)
         {
             if (_attrDict.ContainsKey(name))
             {
                 if (set == null)
-                    set = new HashSet<XmlElement>(_attrDict[name]);
+                    set = new HashSet<XElement>(_attrDict[name]);
                 else
                     set.IntersectWith(_attrDict[name]);
 
@@ -163,37 +163,37 @@ namespace xizzle
                     switch (@operator)
                     {
                         case "=":
-                            set.Filter(e => e.Attributes[name].Value == value);
+                            set.Filter(e => e.Attributes(name).Single().Value == value);
                             break;
                         case "~=":
-                            set.Filter(e => Regex.IsMatch(e.Attributes[name].Value, @"(^|\s)" + Regex.Escape(value) + @"(\s|$)"));
+                            set.Filter(e => Regex.IsMatch(e.Attributes(name).Single().Value, @"(^|\s)" + Regex.Escape(value) + @"(\s|$)"));
                             break;
                         case "^=":
-                            set.Filter(e => e.Attributes[name].Value.StartsWith(value));
+                            set.Filter(e => e.Attributes(name).Single().Value.StartsWith(value));
                             break;
                         case "$=":
-                            set.Filter(e => e.Attributes[name].Value.EndsWith(value));
+                            set.Filter(e => e.Attributes(name).Single().Value.EndsWith(value));
                             break;
                         case "*=":
-                            set.Filter(e => e.Attributes[name].Value.Contains(value));
+                            set.Filter(e => e.Attributes(name).Single().Value.Contains(value));
                             break;
                         case "!=":
-                            set.Filter(e => !e.Attributes[name].Value.Contains(value));
+                            set.Filter(e => !e.Attributes(name).Single().Value.Contains(value));
                             break;
                         case "|=":
-                            set.Filter(e => Regex.IsMatch(e.Attributes[name].Value, "^" + Regex.Escape(value) + "(-|$)"));
+                            set.Filter(e => Regex.IsMatch(e.Attributes(name).Single().Value, "^" + Regex.Escape(value) + "(-|$)"));
                             break;
                         default:
                             throw new Exception(string.Format("Bad comparison operator: {0}", @operator));
                     }
                 }
             }
-            else set = new HashSet<XmlElement>();
+            else set = new HashSet<XElement>();
         }
 
-        private HashSet<XmlElement> Find_SOSS(Match match, Capture capture)
+        private HashSet<XElement> Find_SOSS(Match match, Capture capture)
         {
-            HashSet<XmlElement> set = null;
+            HashSet<XElement> set = null;
 
             foreach (Capture idCapture in match.Groups["IDSelector"].SubcapturesOf(capture))
                 Filter_ID(ref set, idCapture.Value.Substring(1));
@@ -219,10 +219,10 @@ namespace xizzle
                 Filter_Attribute(ref set, name, op, value);
             }
 
-            return set ?? new HashSet<XmlElement>(_xmlDoc.DocumentElement.AllElements());
+            return set ?? new HashSet<XElement>(_root.DescendantsAndSelf());
         }
 
-        public IEnumerable<XmlElement> Select(string selector)
+        public IEnumerable<XElement> Select(string selector)
         {
             var match = _re.Match(selector);
 
@@ -238,12 +238,12 @@ namespace xizzle
                     switch (combinatorCaptures[i].Value)
                     {
                         case ">": // Child Combinator
-                            rightElements.Filter(e => leftElements.Contains(e.ParentElement()));
+                            rightElements.Filter(e => leftElements.Contains(e.Parent));
                             break;
                         case " ": // Descendant Combinator
                             rightElements.Filter(e =>
                             {
-                                for (var p = e.ParentElement(); p != null; p = p.ParentElement())
+                                for (var p = e.Parent; p != null; p = p.Parent)
                                     if (leftElements.Contains(p))
                                         return true;
                                 return false;
@@ -271,9 +271,9 @@ namespace xizzle
 
         public void Dispose()
         {
-            lock (_xmlDoc)
+            lock (_root)
             {
-                _contexts.Remove(_xmlDoc);
+                _contexts.Remove(_root);
             }
         }
     }

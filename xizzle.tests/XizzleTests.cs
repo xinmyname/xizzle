@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using System.Xml;
+using System.Xml.Linq;
 using NUnit.Framework;
 using Should;
 
@@ -7,13 +7,9 @@ namespace xizzle.tests
 {
     public class XizzleContext
     {
-        public XmlDocument Query(string xml)
+        public XElement Query(string xml)
         {
-            var doc = new XmlDocument();
-
-            doc.LoadXml(xml);
-
-            return doc;
+            return XElement.Parse(xml);
         }
     }
 
@@ -34,7 +30,7 @@ namespace xizzle.tests
         {
             Query("<a><b>text</b></a>")
                 .Select("b").Single()
-                .LocalName
+                .Name
                 .ShouldEqual("b");
         }
 
@@ -52,7 +48,7 @@ namespace xizzle.tests
         {
             Query("<a><b><c/></b><b>text2</b><b>text3</b></a>")
                 .Select("b > c").Single()
-                .LocalName
+                .Name
                 .ShouldEqual("c");
         }
 
@@ -70,7 +66,7 @@ namespace xizzle.tests
         {
             Query("<a><b><c/></b><b name='t2'>text2</b><b>text3</b></a>")
                 .Select("#t2").Single()
-                .InnerText
+                .Value
                 .ShouldEqual("text2");
         }
 
@@ -79,7 +75,7 @@ namespace xizzle.tests
         {
             Query("<a><b index='0'><c/></b><b index='1'>text2</b><b index='2'>text3</b></a>")
                 .Select("b[index='2']").Single()
-                .InnerText
+                .Value
                 .ShouldEqual("text3");
         }
 
@@ -97,7 +93,7 @@ namespace xizzle.tests
         {
             Query("<a><b region='us ca mx'>color</b><b region='gb au nz'>colour</b><b region='ne'>kleur</b></a>")
                 .Select("b[region~='au']").Single()
-                .InnerText
+                .Value
                 .ShouldEqual("colour");
         }
 
@@ -106,7 +102,7 @@ namespace xizzle.tests
         {
             Query("<a><b idx='1st'/><c idx='2nd'/><d idx='3rd'/><e idx='4th'/></a>")
                 .Select("*[idx$='rd']").Single()
-                .LocalName
+                .Name
                 .ShouldEqual("d");
         }
 
@@ -115,7 +111,7 @@ namespace xizzle.tests
         {
             Query("<a><b idx='0'><c/></b><b index='1'>text2</b><b index='2'>text3</b></a>")
                 .Select("b[index!='1']").Single()
-                .InnerText
+                .Value
                 .ShouldEqual("text3");
         }
 
@@ -133,7 +129,7 @@ namespace xizzle.tests
         {
             Query("<a><b word='bomb'/><b word='comb'/><b word='come'/><b word='dome'/></a>")
                 .Select("b[word^='bo']").Single()
-                .Attributes["word"]
+                .Attributes("word").Single()
                 .Value
                 .ShouldEqual("bomb");
         }
@@ -152,7 +148,7 @@ namespace xizzle.tests
         {
             Query("<a><b/><c>found</c><b/><d/><c/></a>")
                 .Select("b + c").Single()
-                .InnerText
+                .Value
                 .ShouldEqual("found");
         }
 
