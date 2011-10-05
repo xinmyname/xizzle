@@ -16,7 +16,8 @@ namespace xizzle
         private readonly Dictionary<string, XElement> _idDict;
         private readonly Dictionary<string, HashSet<XElement>> _typeDict;
         private readonly Dictionary<string, HashSet<XElement>> _attrDict;
-        private readonly XElement _root;
+
+        public XElement RootElement { get; private set; }
 
         static XElementContext()
         {
@@ -69,15 +70,20 @@ namespace xizzle
             return context;
         }
 
+        public static bool Has(XElement root)
+        {
+            return _contexts.ContainsKey(root);
+        }
+
         public XElementContext(XElement root)
         {
-            _root = root;
+            RootElement = root;
 
             _idDict = new Dictionary<string, XElement>();
             _typeDict = new Dictionary<string, HashSet<XElement>>();
             _attrDict = new Dictionary<string, HashSet<XElement>>();
 
-            foreach (var el in _root.DescendantsAndSelf())
+            foreach (var el in RootElement.DescendantsAndSelf())
             {
                 IEnumerable<XAttribute> nameAttributes = el.Attributes()
                     .Where(a => String.Compare(a.Name.LocalName, "name", true) == 0);
@@ -219,7 +225,7 @@ namespace xizzle
                 Filter_Attribute(ref set, name, op, value);
             }
 
-            return set ?? new HashSet<XElement>(_root.DescendantsAndSelf());
+            return set ?? new HashSet<XElement>(RootElement.DescendantsAndSelf());
         }
 
         public IEnumerable<XElement> Select(string selector)
@@ -271,9 +277,9 @@ namespace xizzle
 
         public void Dispose()
         {
-            lock (_root)
+            lock (RootElement)
             {
-                _contexts.Remove(_root);
+                _contexts.Remove(RootElement);
             }
         }
     }
