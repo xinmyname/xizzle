@@ -44,7 +44,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegexExtensions.cs" />
     <Compile Include="SetExtensions.cs" />
-    <Compile Include="Xizzle.cs" />
     <Compile Include="XmlDocumentContext.cs" />
     <Compile Include="XmlExtensions.cs" />
   </ItemGroup>

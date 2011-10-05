@@ -69,7 +69,7 @@ namespace xizzle
             return context;
         }
 
-        private XmlDocumentContext(XmlDocument doc)
+        public XmlDocumentContext(XmlDocument doc)
         {
             _xmlDoc = doc;
 
