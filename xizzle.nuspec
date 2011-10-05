@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Package</id>
+    <version>0.1</version>
+    <authors>Andy Sherwood</authors>
+    <owners>Andy Sherwood</owners>
+    <licenseUrl>https://github.com/xinmyname/xizzle/blob/master/license.txt</licenseUrl>
+    <projectUrl>https://github.com/xinmyname/xizzle</projectUrl>
+    <iconUrl>https://github.com/xinmyname/xizzle/blob/master/art/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>XML parsing with selectors, similar to the sizzle engine for HTML</description>
+    <releaseNotes>Initial release.</releaseNotes>
+    <copyright>Copyright 2011</copyright>
+    <tags>xml selector</tags>
+  </metadata>
+</package>

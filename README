@@ -1,2 +1,6 @@
 Started life as a tweaked version sharp-query, but it's taken on a life of it's own in the past few hours.
 
+Some day I plan to rewrite the parser in F#, but right now it relies heavily on code borrowed from sharp-query. Hence, this project is GPLv3, just like sharp-query.
+
+
+
