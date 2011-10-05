@@ -8,6 +8,8 @@ namespace xizzle.tests
     [TestFixture]
     public class XizzleTests
     {
+        private XizzleConventions _originalConventions;
+
         [Test]
         public void Star()
         {
@@ -54,9 +56,9 @@ namespace xizzle.tests
         }
 
         [Test]
-        public void NamedElement()
+        public void DefaultIdNameFindsCorrectElement()
         {
-            XElement.Parse("<a><b><c/></b><b name='t2'>text2</b><b>text3</b></a>")
+            XElement.Parse("<a><b><c/></b><b id='t2'>text2</b><b>text3</b></a>")
                 .Select("#t2").Single()
                 .Value
                 .ShouldEqual("text2");
@@ -163,6 +165,51 @@ namespace xizzle.tests
 
             XElementContext.Has(root)
                 .ShouldBeFalse();
+        }
+
+        [Test]
+        public void CanOverrideIdAttributeNameConvention()
+        {
+            const string xml = "<a><b><c/></b><b NAME='t2'>text2</b><b>text3</b></a>";
+            var conventions = new XizzleConventions {IdAttributeName = () => "NAME"};
+
+            using (var context = XElementContext.Parse(xml, conventions))
+            {
+                context.Select("#t2").Single()
+                    .Value
+                    .ShouldEqual("text2");
+            }
+        }
+
+        [Test]
+        public void CanOverrideDefaultIdAttributeNameConvention()
+        {
+            XElementContext.DefaultConventions =
+                new XizzleConventions
+                {
+                    IdAttributeName = () => "NAME"
+                };
+
+            const string xml = "<a><b><c/></b><b NAME='t2'>text2</b><b>text3</b></a>";
+
+            using (var context = XElementContext.Parse(xml))
+            {
+                context.Select("#t2").Single()
+                    .Value
+                    .ShouldEqual("text2");
+            }
+        }
+
+        [SetUp]
+        public void SaveDefaultConventions()
+        {
+            _originalConventions = XElementContext.DefaultConventions;
+        }
+
+        [TearDown]
+        public void RestoreDefaultConventions()
+        {
+            XElementContext.DefaultConventions = _originalConventions;
         }
     }
 }

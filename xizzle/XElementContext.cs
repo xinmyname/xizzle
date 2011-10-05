@@ -3,20 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace xizzle
 {
+    public class XizzleConventions
+    {
+        public Func<string> IdAttributeName { get; set; }
+    }
+
     public class XElementContext : IDisposable
     {
         private static readonly FlexDict _patterns;
         private static readonly Regex _re;
         private static readonly Dictionary<XElement, XElementContext> _contexts;
 
+        public static XizzleConventions DefaultConventions;
+
         private readonly Dictionary<string, XElement> _idDict;
         private readonly Dictionary<string, HashSet<XElement>> _typeDict;
         private readonly Dictionary<string, HashSet<XElement>> _attrDict;
 
+        public XizzleConventions Conventions { get; private set; }
         public XElement RootElement { get; private set; }
 
         static XElementContext()
@@ -50,9 +59,15 @@ namespace xizzle
             _re = new Regex(_patterns["GOS"], RegexOptions.ExplicitCapture | RegexOptions.Singleline);
 
             _contexts = new Dictionary<XElement, XElementContext>();
+
+            DefaultConventions =
+                new XizzleConventions
+                {
+                    IdAttributeName = () => "id"
+                };
         }
 
-        public static XElementContext Get(XElement root)
+        public static XElementContext Get(XElement root, XizzleConventions conventions = null)
         {
             XElementContext context;
 
@@ -62,7 +77,7 @@ namespace xizzle
                     context = _contexts[root];
                 else
                 {
-                    context = new XElementContext(root);
+                    context = new XElementContext(root, conventions);
                     _contexts.Add(root, context);
                 }
             }
@@ -75,8 +90,19 @@ namespace xizzle
             return _contexts.ContainsKey(root);
         }
 
-        public XElementContext(XElement root)
+        public static XElementContext Parse(string xml, XizzleConventions conventions = null)
         {
+            return Get(XElement.Parse(xml), conventions);
+        }
+
+        public static XElementContext Load(XmlReader reader, XizzleConventions conventions = null)
+        {
+            return Get(XElement.Load(reader), conventions);
+        }
+
+        public XElementContext(XElement root, XizzleConventions conventions = null)
+        {
+            Conventions = conventions ?? DefaultConventions;
             RootElement = root;
 
             _idDict = new Dictionary<string, XElement>();
@@ -86,7 +112,7 @@ namespace xizzle
             foreach (var el in RootElement.DescendantsAndSelf())
             {
                 IEnumerable<XAttribute> nameAttributes = el.Attributes()
-                    .Where(a => String.Compare(a.Name.LocalName, "name", true) == 0);
+                    .Where(a => a.Name.LocalName == Conventions.IdAttributeName());
                 
                 foreach (XAttribute attr in nameAttributes)
                     _idDict[attr.Value] = el;

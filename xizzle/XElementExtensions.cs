@@ -20,9 +20,9 @@ namespace xizzle
             return context.Select(selector);
         }
 
-        public static XElementContext Open(this XElement root)
+        public static XElementContext Open(this XElement root, XizzleConventions conventions = null)
         {
-            return XElementContext.Get(root);
+            return XElementContext.Get(root, conventions);
         }
     }
 }
