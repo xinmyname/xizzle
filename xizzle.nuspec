@@ -7,7 +7,7 @@
     <owners>Andy Sherwood</owners>
     <licenseUrl>https://github.com/xinmyname/xizzle/blob/master/license.txt</licenseUrl>
     <projectUrl>https://github.com/xinmyname/xizzle</projectUrl>
-    <iconUrl>https://github.com/xinmyname/xizzle/blob/master/art/logo.png</iconUrl>
+    <iconUrl>https://github.com/xinmyname/xizzle/raw/master/art/logo.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>XML parsing with selectors, similar to the sizzle engine for HTML</description>
     <releaseNotes>Initial release.</releaseNotes>
